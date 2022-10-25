@@ -10,4 +10,10 @@ router.route('/')
         res.status(200).json(res.locals.todo);
     })
 
+router.route('/:id')
+    .patch(todoController.editTodo, (req, res) => {
+        res.status(200).json(res.locals.updatedTodo);
+    })
+    .delete()
+
 module.exports = router;

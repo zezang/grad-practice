@@ -42,3 +42,47 @@ exports.createTodo = async (req, res, next) => {
         })
     }
 };
+
+exports.editTodo = async (req, res, next) => {
+    const id = req.params.id;
+    const { author, description } = req.body;
+
+    if (!author || !description) return next({
+        log: 'Error editing a new to do',
+        status: 400,
+        message: {
+            err: 'Please provide an author and description',
+        },
+    });
+    
+    try {
+        const updatedTodo = await ToDo.findByIdAndUpdate(id, { author, description }, { new: true });
+        res.locals.updatedTodo = updatedTodo;
+        return next();
+    } catch(err) {
+        return next({
+            log: 'Error in editTodos middleware',
+            status: 404,
+            message: {
+                err: err.message
+            },
+        });
+    };
+};
+
+exports.deleteTodo = async (req, res, next) => {
+    const id = req.params.id;
+
+    try {
+        const deleteTodo = await ToDo.findByIdAndDelete(id);
+    } catch(err) {
+        return next({
+            log: 'Error in deleteTodo middleware',
+            status: 404,
+            message: {
+                err: err.message
+            },
+        })
+    }
+    
+};
