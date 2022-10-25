@@ -10,7 +10,16 @@ const createElement = (parent, textContent, elementType) => {
     return newElement;
 };
 
+const fetchTodos = async () => {
+    const response = await fetch('/api/todos');
+    if (response.ok) {
+        const todos = await response.json();
+        console.log(todos);
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+    fetchTodos();
     //set constant body to the body of the document
     const body = document.querySelector('body');
     //create header

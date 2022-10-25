@@ -1,15 +1,28 @@
 //import packages
-const { error } = require('console');
+const mongoose = require('mongoose');
 const express = require('express');
 const path = require('path');
 
-//intialize instances
+//boilerplate code
 const app = express();
 require('dotenv').config();
+
+//parsing of request body
+app.use(express.json());
+
+//connect to mongo atlas DB
+const mongoURI = process.env.MONGO_URI.replace('<password>', process.env.MONGO_PASSWORD);
+mongoose.connect(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    })
+    .then(() => console.log('DB connection successful!'))
+    .catch(err => console.log(err))
 
 //import routees
 const todoRouter = require('./routes/todoRoute.js');
 
+//set up todo routing
 app.use('/api/todos', todoRouter);
 
 //serving up index html on root path
