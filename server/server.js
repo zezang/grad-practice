@@ -10,14 +10,10 @@ require('dotenv').config();
 //import routees
 const todoRouter = require('./routes/todoRoute.js');
 
-app.use('/todo', todoRouter);
+app.use('/api/todos', todoRouter);
 
 //serving up index html on root path
-app.use('/', (req, res) => {
-    if (req.method === 'GET') {
-        res.sendFile(path.resolve(__dirname, '../index.html'));
-    }
-});
+app.use('/', express.static(path.resolve(__dirname, '../client')));
 
 //handler for nonexistant routes
 app.use((req, res) => {
