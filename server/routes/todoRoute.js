@@ -14,6 +14,8 @@ router.route('/:id')
     .patch(todoController.editTodo, (req, res) => {
         res.status(200).json(res.locals.updatedTodo);
     })
-    .delete()
+    .delete(todoController.deleteTodo, (req, res) => {
+        res.status(200).json('Deleted successfully')
+    })
 
 module.exports = router;

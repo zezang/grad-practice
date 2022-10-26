@@ -46,17 +46,17 @@ exports.createTodo = async (req, res, next) => {
 exports.editTodo = async (req, res, next) => {
     const id = req.params.id;
     const { author, description } = req.body;
-
-    if (!author || !description) return next({
+    console.log('EDIT REQEUST: ', req.body)
+    if (!author && !description) return next({
         log: 'Error editing a new to do',
         status: 400,
         message: {
-            err: 'Please provide an author and description',
+            err: 'Please provide an author or description',
         },
     });
     
     try {
-        const updatedTodo = await ToDo.findByIdAndUpdate(id, { author, description }, { new: true });
+        const updatedTodo = await ToDo.findByIdAndUpdate(id, req.body, { new: true });
         res.locals.updatedTodo = updatedTodo;
         return next();
     } catch(err) {
@@ -75,6 +75,7 @@ exports.deleteTodo = async (req, res, next) => {
 
     try {
         const deleteTodo = await ToDo.findByIdAndDelete(id);
+        return next();
     } catch(err) {
         return next({
             log: 'Error in deleteTodo middleware',

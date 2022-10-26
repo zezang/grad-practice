@@ -10,6 +10,79 @@ const createElement = (parent, textContent, elementType) => {
     return newElement;
 };
 
+const createModal = (parent, author, description, id) => {
+    //create wrapper modal
+    const modal = createElement(parent, null, 'div');
+    modal.className = 'modal';
+
+    //create modal content container
+    const modalContent = createElement(modal, null, 'div');
+    modalContent.className = 'modal-content';
+
+    //create heading
+    createElement(modalContent, 'EDIT TASK', 'h4');
+
+    //generate form to edit data
+    const editTaskForm = createElement(modalContent, null, 'form');
+    editTaskForm.name = 'edit-form';
+    editTaskForm.className = 'edit-form';
+    editTaskForm.addEventListener('submit', async(e) => {
+        e.preventDefault();
+
+        const editedTask = {};
+
+        for (const element of e.target.elements) {
+            if (element.name === 'author') {
+                if (element.value.trim().length === 0 || element.value === author) continue;
+                editedTask['author'] = element.value;
+            }
+            if (element.name === 'description') {
+                if (element.value.trim().length === 0 || element.value === description) continue;
+                editedTask['description'] = element.value;
+            }
+        }
+
+        if (Object.keys(editedTask).length) {
+            const editResponse = await editTodo(id, editedTask);
+            if (editResponse) {
+                window.location.reload();
+            }
+        }
+    });
+
+    const editAuthorLabel = createElement(editTaskForm, null, 'label');
+    editAuthorLabel.for = 'edit-author';
+    const editAuthorInput = createElement(editTaskForm, null, 'input');
+    editAuthorInput.id = 'edit-author';
+    editAuthorInput.name = 'author';
+    editAuthorInput.placeholder = 'Enter new author'
+
+    //create label and input elements for description field
+    const editDescriptionLabel = createElement(editTaskForm, null, 'label');
+    editDescriptionLabel.for = 'edit-description';
+    const editDescriptionInput = createElement(editTaskForm, null, 'input');
+    editDescriptionInput.id = 'edit-description';
+    editDescriptionInput.name = 'description';
+    editDescriptionInput.placeholder = 'Enter new description';
+
+    //create container for the edit and cancel buttons
+    const editButtonContainer = createElement(editTaskForm, null, 'div');
+    editButtonContainer.className = 'edit-button-container';
+
+    const editButton = createElement(editButtonContainer, 'Submit', 'button');
+    editButton.type = 'submit';
+    editButton.id = 'edit-submit';
+
+    const cancelButton = createElement(editButtonContainer, 'Cancel', 'button');
+    cancelButton.type = 'button';
+    cancelButton.id = 'cancel-submit';
+    cancelButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        //remove the modal from the DOM
+        e.target.parentNode.parentNode.parentNode.parentNode.remove();
+    })
+}
+
 const fetchTodos = async () => {
     //fetch todos in DB from server endpoint
     const response = await fetch('/api/todos');
@@ -23,7 +96,6 @@ const fetchTodos = async () => {
 
 const createTodos =  async (taskObj) => {
     const dateCreated = new Date().toLocaleDateString('en-US');
-    console.log(dateCreated);
     taskObj['dateCreated'] = dateCreated;
 
     const response = await fetch('/api/todos', {
@@ -42,8 +114,36 @@ const createTodos =  async (taskObj) => {
     return false;
 };
 
+const editTodo = async (id, taskObj) => {
+    //send edit request
+    const response = await fetch(`/api/todos/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(taskObj),
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json', 
+        },
+    });
+
+    return response.ok;
+}
+
+const deleteTodo = async (id) => {
+    //send delete request to backend
+    const response = await fetch(`/api/todos/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Accept': 'application/json',
+        }
+    });
+
+    //return whether the request was successful or not
+    return response.ok;
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     const existingTasks = await fetchTodos();
+    console.log('Page loaded ', existingTasks)
     //set constant body to the body of the document
     const body = document.querySelector('body');
     //create header
@@ -62,7 +162,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (e.target.elements[i].name === 'author' || e.target.elements[i].name === 'description') {
                 task[e.target.elements[i].name] = e.target.elements[i].value;
             }
-        }
+        };
+
+        //if either author or description field is empty return immediately
+        if (!task['author'] || !task['description']) return;
         const test = await createTodos(task);
     });
     document.body.appendChild(todoForm);
@@ -103,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tasksHeader = createElement(tasksContainer, null, 'div');
     tasksHeader.className = 'task-header';
     
-    const headers = ['Author', 'Description', 'Date Created'];
+    const headers = ['Author', 'Description', 'Date Created', '', ''];
     for (const header of headers) {
         createElement(tasksHeader, header, 'h5');
     };
@@ -112,11 +215,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (existingTasks.length) {
 
         for (const task of existingTasks) {
+            //create div for each todo
             const taskItem = createElement(tasksContainer, null, 'div');
             taskItem.className = 'task-item';
-            createElement(taskItem, task.author, 'p');
-            createElement(taskItem, task.description, 'p')
-            createElement(taskItem, new Date(task.dateCreated).toDateString(), 'p')
+            taskItem.id = `task ${task._id}`;
+
+            //add author
+            const author = createElement(taskItem, task.author, 'p');
+
+            //add description
+            const description = createElement(taskItem, task.description, 'p');
+        
+            //add date created
+            createElement(taskItem, new Date(task.dateCreated).toDateString(), 'p');
+            
+
+            //add button to delete task
+            const deleteButtonContainer = createElement(taskItem, null, 'div');
+            deleteButtonContainer.className = 'button-container';
+            const deleteButton = createElement(deleteButtonContainer, 'Delete', 'button');
+            deleteButton.className='delete-button';
+            deleteButton.addEventListener('click', async(e) => {
+                //store result of response in result variable
+                const result = await deleteTodo(`${task._id}`);
+
+                //if response comes back true, reload the page to re-fetch data
+                if (result) {
+                    //remove grandparent node if response was successful
+                    e.target.parentNode.parentNode.remove();
+                    // window.location.reload();
+                }
+            });
+
+            //add edit button
+            const editButtonContainer = createElement(taskItem, null, 'div');
+            editButtonContainer.className = 'button-container';
+            const editButton = createElement(editButtonContainer, 'Edit', 'button');
+            editButton.className='edit-button';
+            editButton.addEventListener('click', (e) => {
+                createModal(body, task.author, task.description, task._id);
+            });
         }
     };
+
 });
